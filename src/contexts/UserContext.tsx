@@ -1,36 +1,28 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import React, { createContext, useReducer, ReactNode } from "react";
 
 type UserState = {
   locale: string;
-  scheme: string;
-  loggedIn: Boolean;
+  user: User | null;
   error: Error | null;
 };
 
 const initialState: UserState = {
   locale: "en",
-  scheme: "light",
-  loggedIn: false,
+  user: null,
   error: null,
 };
 
 const reducer = (state: UserState, action: Action) => {
   switch (action.type) {
-    case "UPDATE_LOCALE":
+    case "SET_LOCALE":
       return {
         ...state,
         locale: action.payload,
       };
-    case "UPDATE_SCHEME":
+    case "SET_USER":
       return {
         ...state,
-        scheme: action.payload,
-      };
-    case "UPDATE_LOGIN":
-      return {
-        ...state,
-        loggedIn: action.payload,
+        user: action.payload,
       };
     default:
       throw new Error();

@@ -1,65 +1,116 @@
-import React from "react";
-
-const posts = [
-  {
-    id: 6,
-    title: "The Anatomy of a Well-Engineered App",
-    body: "Try making it a bit less blah low resolution? It looks ok on my screen, or could you do an actual logo instead of a font i'll know it when i see it but make the font bigger and this turned out different that i decscribed but i love it, but can you invert all colors?.",
-    created_at: "2021-12-29T07:55:29.523Z",
-    updated_at: "2021-12-29T11:33:07.033Z",
-    comment_count: 11,
-    user: {
-      id: 3,
-      display_name: "Izzo",
-    },
-  },
-  {
-    id: 5,
-    title: "Last of the Mohicans",
-    body: "Try making it a bit less blah low resolution? It looks ok on my screen, or could you do an actual logo instead of a font i'll know it when i see it but make the font bigger and this turned out different that i decscribed but i love it, but can you invert all colors?.",
-    created_at: "2021-12-29T07:55:21.943Z",
-    updated_at: "2021-12-29T11:33:18.135Z",
-    comment_count: 5,
-    user: {
-      id: 3,
-      display_name: "Izzo",
-    },
-  },
-  {
-    id: 4,
-    title: "Extrapolation is the new Black",
-    body: "Try making it a bit less blah low resolution? It looks ok on my screen, or could you do an actual logo instead of a font i'll know it when i see it but make the font bigger and this turned out different that i decscribed but i love it, but can you invert all colors?.",
-    created_at: "2021-12-29T07:54:57.503Z",
-    updated_at: "2021-12-29T11:33:33.265Z",
-    comment_count: 1,
-    user: {
-      id: 3,
-      display_name: "Izzo",
-    },
-  },
-  {
-    id: 2,
-    title: "Return of the Suicide Squad",
-    body: "Try making it a bit less blah low resolution? It looks ok on my screen, or could you do an actual logo instead of a font i'll know it when i see it but make the font bigger and this turned out different that i decscribed but i love it, but can you invert all colors?.",
-    created_at: "2021-12-28T16:17:47.509Z",
-    updated_at: "2021-12-29T11:33:56.109Z",
-    comment_count: 8,
-    user: {
-      id: 3,
-      display_name: "Izzo",
-    },
-  },
-];
+import React, { useContext, useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "react-query";
+import { Link } from "react-router-dom";
+import { UserContext } from "contexts/UserContext";
+import { fetchPosts, createNewPost, deletePost } from "utils/api";
+import { Button, Loader } from "components";
 
 export default function Home() {
+  const [page, setPage] = useState<number>(1);
+  const [newPost, setNewPost] = useState({ title: "", body: "" });
+  const [state, dispatch] = useContext(UserContext);
+
+  // Access the client
+  const queryClient = useQueryClient();
+
+  // Queries
+  const { isLoading, isError, data, error, isFetching, isPreviousData } =
+    useQuery<{ posts: Post[]; meta: Meta }, Error>(
+      ["posts", page],
+      () => fetchPosts(page),
+      {
+        keepPreviousData: true,
+      }
+    );
+
+  // Mutations
+  const createPostMutation = useMutation(
+    (data: { post: Post }) => createNewPost(state.user?.auth, data),
+    {
+      onSuccess: () => {
+        // Invalidate and refetch
+        queryClient.invalidateQueries("posts");
+        setNewPost({ title: "", body: "" });
+      },
+    }
+  );
+  const deletePostMutation = useMutation(
+    (postId: number) => deletePost(state.user?.auth, postId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries("posts");
+      },
+    }
+  );
+
+  const hasMorePost = useMemo(() => {
+    return data?.meta
+      ? data.meta.current_page * data.meta.per_page < data.meta.total_entries
+      : false;
+  }, [data]);
+
+  const onInputChange = (name: string, value: string | number | boolean) => {
+    setNewPost((prev: Post) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  if (isLoading) {
+    return <Loader />;
+  }
+
+  if (isError) {
+    return (
+      <div className="flex">
+        <div>Error: {error?.message}</div>;
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col">
-      <div className="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-        <div className="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-          <div className="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
+      <div className="h-full overflow-auto sm:-mx-6 lg:-mx-8">
+        <div className="py-2 align-middle inline-block sm:px-6 lg:px-8">
+          <div className="mb-3 xl:w-96">
+            <input
+              className="appearance-none border border-red rounded w-full py-2 px-3 text-grey-darker mb-3"
+              type="text"
+              placeholder="Post title"
+              onChange={(x) => onInputChange("title", x.target.value)}
+            />
+            <textarea
+              className="form-control block w-full py-2 px-3 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-blue-600 focus:outline-none"
+              placeholder="Add your new post message"
+              value={newPost.body}
+              onChange={(x) => onInputChange("body", x.target.value)}
+            ></textarea>
+          </div>
+          <div className="flex items-center justify-between">
+            <Button
+              text="New Post"
+              onClick={() => createPostMutation.mutate({ post: newPost })}
+            />
+            <Button
+              text="Logout"
+              onClick={() =>
+                dispatch({
+                  type: "SET_USER",
+                  payload: null,
+                })
+              }
+            />
+          </div>
+          <div className="py-4">
+            <table className="shadow border-b border-gray-200 sm:rounded-lg divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
+                  <th
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    ID
+                  </th>
                   <th
                     scope="col"
                     className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -80,28 +131,42 @@ export default function Home() {
                   </th>
                   <th scope="col" className="relative px-6 py-3">
                     <span className="sr-only">Edit</span>
+                    <span className="sr-only">Delete</span>
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {posts.map((post) => (
+                {data?.posts?.map((post) => (
                   <tr key={post.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">{post.id}</div>
+                    </td>
+                    <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">{post.title}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">{post.body}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 text-sm text-gray-500">
                       {post.comment_count}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <a
-                        href="#"
-                        className="text-indigo-600 hover:text-indigo-900"
+                    <td className="px-6 py-4 text-right text-sm font-medium flex">
+                      <Link
+                        className="text-indigo-600 hover:text-indigo-900 pr-4"
+                        to={`/posts/${post.id}`}
                       >
-                        Edit
-                      </a>
+                        View
+                      </Link>
+                      <button
+                        style={{
+                          display:
+                            state.user.id === post?.user?.id ? "" : "none",
+                        }}
+                        className="text-indigo-600 hover:text-indigo-900 pr-4"
+                        onClick={() => deletePostMutation.mutate(post.id || -1)}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -109,6 +174,26 @@ export default function Home() {
             </table>
           </div>
         </div>
+      </div>
+      <div className="flex justify-between py-4">
+        <Button
+          text="Previous Page"
+          disabled={page === 0}
+          onClick={() => setPage((prev) => Math.max(prev - 1, 0))}
+        />
+        <div>
+          <span>Current Page: {page}</span>
+          {isFetching ? <span> Loading...</span> : null}{" "}
+        </div>
+        <Button
+          text="Next Page"
+          onClick={() => {
+            if (!isPreviousData && hasMorePost) {
+              setPage((prev) => prev + 1);
+            }
+          }}
+          disabled={isPreviousData || !hasMorePost}
+        />
       </div>
     </div>
   );
