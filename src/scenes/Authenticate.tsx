@@ -5,6 +5,7 @@ import { UserContext } from "contexts";
 import { Button } from "components";
 
 const Authenticate = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [state, dispatch] = useContext(UserContext);
   const [credentials, setCredentials] = useState<User>({});
   const [errors, setErrors] = useState<string>();
@@ -41,6 +42,9 @@ const Authenticate = () => {
 
   return (
     <div className="h-full">
+      <div className="py-8 text-2xl font-bold text-sky-500">
+        Welcome to Brivity!
+      </div>
       <div className="shadow-md rounded px-8 pt-6 pb-8 mb-4 flex flex-col">
         <div className="mb-4">
           <label className="block text-grey-darker text-sm font-bold mb-2">
