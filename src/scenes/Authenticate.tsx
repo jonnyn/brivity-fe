@@ -1,7 +1,7 @@
 import React, { useState, useContext } from "react";
 import { useMutation } from "react-query";
-import { signIn, createUser } from "utils/api";
-import { UserContext } from "contexts/UserContext";
+import { signInSignUp } from "utils/api";
+import { UserContext } from "contexts";
 import { Button } from "components";
 
 const Authenticate = () => {
@@ -10,31 +10,15 @@ const Authenticate = () => {
   const [errors, setErrors] = useState<string>();
 
   // Mutations
-  const signInMutation = useMutation(
-    (credentials: { user: User }) => signIn(credentials),
-    {
-      onSuccess: (data) => {
-        if (data.error) {
-          setErrors(data.error);
-        } else {
-          dispatch({
-            type: "SET_USER",
-            payload: {
-              ...data,
-              email: credentials.email,
-            },
-          });
-        }
-      },
-    }
-  );
-
-  const createUserMutation = useMutation(
-    (info: { user: User }) => createUser(info),
+  const signInSignUpMutation = useMutation(
+    ({ newUser, userInfo }: { newUser: boolean; userInfo: User }) =>
+      signInSignUp(newUser, userInfo),
     {
       onSuccess: (data) => {
         if (data.errors) {
           setErrors(JSON.stringify(data.errors));
+        } else if (data.error) {
+          setErrors(data.error);
         } else {
           dispatch({
             type: "SET_USER",
@@ -53,16 +37,6 @@ const Authenticate = () => {
       ...prev,
       [name]: value,
     }));
-  };
-
-  const handleSignIn = () => {
-    const params = { user: credentials };
-    signInMutation.mutate(params);
-  };
-
-  const handleSignUp = () => {
-    const params = { user: credentials };
-    createUserMutation.mutate(params);
   };
 
   return (
@@ -85,7 +59,7 @@ const Authenticate = () => {
             Password
           </label>
           <input
-            className="shadow appearance-none border border-red rounded w-full py-2 px-3 text-grey-darker mb-3"
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker mb-3"
             id="password"
             type="password"
             placeholder="******************"
@@ -98,7 +72,7 @@ const Authenticate = () => {
             Display Name
           </label>
           <input
-            className="shadow appearance-none border border-red rounded w-full py-2 px-3 text-grey-darker mb-3"
+            className="shadow appearance-none border rounded w-full py-2 px-3 text-grey-darker mb-3"
             id="display_name"
             type="text"
             placeholder="Display name"
@@ -112,11 +86,24 @@ const Authenticate = () => {
           {errors}
         </div>
         <div className="flex items-center justify-between">
-          <Button text="Sign In" onClick={handleSignIn} />
+          <Button
+            text="Sign In"
+            onClick={() => {
+              signInSignUpMutation.mutate({
+                newUser: false,
+                userInfo: credentials,
+              });
+            }}
+          />
           <Button
             className="bg-orange-300 hover:bg-orange-600"
             text="Sign Up"
-            onClick={handleSignUp}
+            onClick={() => {
+              signInSignUpMutation.mutate({
+                newUser: true,
+                userInfo: credentials,
+              });
+            }}
           />
         </div>
       </div>

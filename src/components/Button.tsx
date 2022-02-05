@@ -17,7 +17,11 @@ const Button = ({
 }: ButtonType) => {
   return (
     <button
-      className={`bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded ${className}`}
+      className={
+        disabled
+          ? `bg-sky-600/50 hover:bg-sky-700/50 text-white font-bold py-2 px-4 rounded ${className}`
+          : `bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded ${className}`
+      }
       style={style}
       type="button"
       disabled={disabled}

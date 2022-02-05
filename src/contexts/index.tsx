@@ -1,7 +1,7 @@
 import React, { ComponentProps, FC } from "react";
-import { UserContextProvider } from "./UserContext";
-import { PostContextProvider } from "./PostContext";
-import { CommentContextProvider } from "./CommentContext";
+import { UserContextProvider, UserContext } from "./UserContext";
+import { PostContextProvider, PostContext } from "./PostContext";
+import { CommentContextProvider, CommentContext } from "./CommentContext";
 
 const providers = [
   UserContextProvider,
@@ -21,4 +21,5 @@ const AppContextProvider = providers.reduce(
   ({ children }) => <>{children}</>
 );
 
+export { UserContext, PostContext, CommentContext };
 export default AppContextProvider;

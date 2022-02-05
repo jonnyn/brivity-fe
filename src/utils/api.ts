@@ -1,40 +1,24 @@
-import { encodeQueryData } from "utils/helpers";
 import { apiEndpoints } from "utils/config";
 
-// Create an Account
-export const createUser = async (data: { user: User }) => {
-  const response = await fetch(apiEndpoints.create_user, {
+// Create an Account and User sign in
+export const signInSignUp = async (newUser: boolean, data: User) => {
+  const url = newUser ? apiEndpoints.create_user : apiEndpoints.sign_in;
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ user: data }),
   });
   const auth = response.headers.get("Authorization");
   const result = await response.json();
   return { ...result, auth };
 };
 
-// User sign in
-export const signIn = async (data: { user: User }) => {
-  const response = await fetch(apiEndpoints.sign_in, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-  const auth = response.headers.get("Authorization");
-  const result = await response.json();
-  return { ...result, auth };
-};
-
-// Posts Index - Paginated
+// Get Posts Index - Paginated
 export const fetchPosts = async (page: number) => {
-  const queryString = encodeQueryData(page);
-  const response = await fetch(`${apiEndpoints.posts}?${queryString}`);
+  const response = await fetch(`${apiEndpoints.posts}?page=${page}`);
   if (!response.ok) {
     throw new Error("Network response was not ok");
   }
@@ -62,7 +46,7 @@ export const getPostComments = async (postId: number, page: number) => {
 };
 
 // Create a Post - Protected
-export const createNewPost = async (token: string, data: { post: Post }) => {
+export const createNewPost = async (token: string, data: Post) => {
   const response = await fetch(apiEndpoints.posts, {
     method: "POST",
     headers: {
@@ -70,7 +54,7 @@ export const createNewPost = async (token: string, data: { post: Post }) => {
       Authorization: token,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ post: data }),
   });
   if (!response.ok) {
     throw new Error("Network response was not ok");

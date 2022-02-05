@@ -1,7 +1,7 @@
 import React, { useContext, Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Loader } from "components";
-import { UserContext } from "contexts/UserContext";
+import { UserContext } from "contexts";
 
 const Authenticate = lazy(() => import("scenes/Authenticate"));
 const Home = lazy(() => import("scenes/Home"));

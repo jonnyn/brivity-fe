@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQueryClient, useQuery, useMutation } from "react-query";
 import {
@@ -10,7 +10,7 @@ import {
   editExistingComment,
   deleteComment,
 } from "utils/api";
-import { UserContext } from "contexts/UserContext";
+import { UserContext } from "contexts";
 import { Button } from "components";
 
 export default function PostDetails() {
@@ -116,6 +116,11 @@ export default function PostDetails() {
 
   const { created_at, user } = data?.post || {};
   const { comments, meta } = commentsQuery.data || {};
+  const hasMoreComments = useMemo(() => {
+    return meta
+      ? meta.current_page * meta.per_page < meta.total_entries
+      : false;
+  }, [meta]);
 
   const onPostInputChange = (name: string, value: string) => {
     setEditPost((prev: Post) => ({
@@ -148,7 +153,7 @@ export default function PostDetails() {
         style={{ width: "6rem" }}
         onClick={() => navigate(-1)}
       />
-      <div className="h-48 w-96 p-4">
+      <div className="h-full w-full p-4">
         <input
           className="appearance-none border rounded w-full py-2 px-3 text-grey-darker mb-3"
           value={editPost.title}
@@ -160,7 +165,7 @@ export default function PostDetails() {
           <span>By {user?.display_name}</span>
         </div>
         <textarea
-          className="appearance-none border rounded w-full py-2 px-3 h-32 overflow-y-scroll text-grey-darker mb-3"
+          className="appearance-none border rounded w-full py-2 px-3 h-48 overflow-y-scroll text-grey-darker mb-3"
           value={editPost.body}
           disabled={disabledEdit}
           onChange={(x) => onPostInputChange("body", x.target.value)}
@@ -182,12 +187,27 @@ export default function PostDetails() {
           />
         </div>
       </div>
-      <div className="h-48 w-96 p-4">
+      <div className="h-full w-full p-4">
+        <div className="py-4">
+          <textarea
+            className="appearance-none border rounded w-full py-2 px-3 text-grey-darker mb-3"
+            value={newComment.content}
+            placeholder="Write Comment"
+            onChange={(x) =>
+              setNewComment((prev) => ({ ...prev, content: x.target.value }))
+            }
+          />
+          <Button
+            onClick={() => postCommentMutation.mutate(newComment)}
+            text="Post Comment"
+          />
+        </div>
         <div className="py-2">Comments ({meta?.total_entries})</div>
-        <div className="appearance-none border rounded w-full py-2 px-3 text-grey-darker mb-3 h-36 overflow-y-auto">
+        <div className="appearance-none border rounded w-full py-2 px-3 text-grey-darker h-80 overflow-y-scroll">
           {comments?.map((comment) => (
             <div key={comment.id} className="py-2 px-4">
               <textarea
+                className="appearance-none border rounded w-full py-2 px-3 text-grey-darker mb-3"
                 defaultValue={comment.content}
                 disabled={editComment.id !== comment.id}
                 onChange={(x) =>
@@ -220,18 +240,24 @@ export default function PostDetails() {
             </div>
           ))}
         </div>
-        <div>
-          <textarea
-            className="appearance-none border rounded w-full py-2 px-3 text-grey-darker mb-3"
-            value={newComment.content}
-            placeholder="Write Comment"
-            onChange={(x) =>
-              setNewComment((prev) => ({ ...prev, content: x.target.value }))
-            }
-          />
+        <div className="flex justify-between py-4">
           <Button
-            onClick={() => postCommentMutation.mutate(newComment)}
-            text="Post Comment"
+            text="Previous Page"
+            disabled={commentPage === 1}
+            onClick={() => setCommentPage((prev) => Math.max(prev - 1, 0))}
+          />
+          <div>
+            <span>Current Page: {commentPage}</span>
+            {commentsQuery.isFetching ? <span> Loading...</span> : null}{" "}
+          </div>
+          <Button
+            text="Next Page"
+            onClick={() => {
+              if (!commentsQuery.isPreviousData && hasMoreComments) {
+                setCommentPage((prev) => prev + 1);
+              }
+            }}
+            disabled={commentsQuery.isPreviousData || !hasMoreComments}
           />
         </div>
       </div>
